@@ -15,6 +15,7 @@
 - 每条 CK 独立 IMAP 配置、验证码提取和邮件预览
 - 每 30 秒按 CK 增量同步 IMAP，首次最多读取最近 100 封
 - 每个隐私邮箱可生成独立开放密钥，提供 JSON 最新邮件接口和只读网页
+- 面向 sentinel-rs 的统一邮箱池 API：原子领取已有邮箱、独立密钥、HTML 验证码卡片，默认关闭
 - Skyroc Admin v3 管理界面、响应式布局、暗色主题和库存分页
 - Docker 镜像、SQLite 持久卷、健康检查和在线备份
 
@@ -28,6 +29,15 @@ GET /mail/:email/:token
 ```
 
 JSON 接口返回该隐私邮箱在本地数据库中的最新邮件；暂无邮件时返回 `message: null`。重置或撤销后，旧密钥立即失效。开放请求不会临时连接 IMAP，后台同步器默认每 30 秒更新本地邮件。
+
+## 统一邮箱池 API
+
+新增 `/api/v1/health`、`POST /api/v1/mailboxes` 及领取后返回的 HTML 取码地址，
+兼容 sentinel-rs 的通用邮箱契约。新 API 使用独立 Bearer Token，从明确配置的账号和标签范围领取
+`unused` 邮箱，取码时按账号节流触发后台同步。领取后标记为 `used`，不会自动生产或回收邮箱。
+
+默认不启用，也不轮换现有公开链接。freeAgentIdentity 继续使用旧接口，启用时需要为新 API
+选择不重叠的库存范围。配置、接口、HTTPS 接入、数据备份和回滚步骤见 [统一邮箱池 API 接入说明](docs/mail-api.md)。
 
 ## 获取 iCloud CK
 

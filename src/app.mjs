@@ -11,11 +11,12 @@ import { createTaskRouter } from "./routes/task-routes.mjs";
 import { createCampaignRouter } from "./routes/campaign-routes.mjs";
 import { createMessageRouter } from "./routes/message-routes.mjs";
 import { createPublicMailRouter } from "./routes/public-mail-routes.mjs";
+import { createMailApiRouter } from "./routes/mail-api-routes.mjs";
 import { requireAdmin, requireTrustedOrigin } from "./middleware.mjs";
 import { verifyAdminToken } from "./security.mjs";
 
 /** 创建配置完整的 Express 应用。 */
-export function createApp({ config, repositories, icloudService, inboxService, campaignService, publicMailService }) {
+export function createApp({ config, repositories, icloudService, inboxService, campaignService, publicMailService, mailApiService }) {
   const app = express();
   const skyrocDir = join(process.cwd(), "frontend", "apps", "admin", "dist");
   const legacyDir = join(process.cwd(), "public");
@@ -26,6 +27,7 @@ export function createApp({ config, repositories, icloudService, inboxService, c
     "connect-src": ["'self'", "https://api.iconify.design", "https://api.unisvg.com", "https://api.simplesvg.com"],
     "upgrade-insecure-requests": null
   } } }));
+  app.use("/api/v1", createMailApiRouter(mailApiService));
   app.use(express.json({ limit: "256kb" }));
   app.use(cookieParser());
   app.use(requireTrustedOrigin(config));
