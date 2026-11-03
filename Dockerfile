@@ -1,5 +1,6 @@
 FROM node:24-bookworm-slim AS node-deps
 WORKDIR /app
+RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
@@ -17,9 +18,11 @@ COPY --from=node:24-bookworm-slim /usr/local/ /usr/local/
 ENV NODE_ENV=production \
     TZ=Asia/Shanghai \
     PATH=/opt/venv/bin:$PATH \
+    PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
     PYTHONUNBUFFERED=1 \
     PYTHONUTF8=1
 WORKDIR /app
+RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources
 RUN apt-get update \
     && apt-get install -y --no-install-recommends tzdata \
     && rm -rf /var/lib/apt/lists/* \

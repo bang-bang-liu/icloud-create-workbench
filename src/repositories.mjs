@@ -173,6 +173,14 @@ export function createRepositories(db) {
       .run(new Date().toISOString()).changes;
   }
 
+  /** 回收超过安全时限仍未结束的遗留任务，避免长期占用 CK 的任务名额。 */
+  function recoverStaleJobs(accountId, staleMinutes = 10) {
+    const cutoff = new Date(Date.now() - staleMinutes * 60_000).toISOString();
+    return db.prepare(`UPDATE generation_jobs SET status = 'failed', error_summary = '任务超时，系统已自动回收', finished_at = ?
+      WHERE account_id = ? AND status IN ('queued', 'running') AND COALESCE(started_at, created_at) <= ?`)
+      .run(new Date().toISOString(), accountId, cutoff).changes;
+  }
+
   /** 判断账号当前是否已有运行任务。 */
   function hasRunningJob(accountId) {
     return Boolean(db.prepare("SELECT 1 FROM generation_jobs WHERE account_id = ? AND status IN ('queued', 'running') LIMIT 1").get(accountId));
@@ -519,7 +527,7 @@ export function createRepositories(db) {
 
   return {
     listAccounts, getAccount, getAccountInternal, upsertAccount, updateAccountCookie, markAccountExpired, deleteAccount, updateMaildomainHost,
-    createJob, createJobWithLabels, allocateLabels, startJob, finishJob, recoverRunningJobs, hasRunningJob, listJobs, listAllJobs, pageAllJobs,
+    createJob, createJobWithLabels, allocateLabels, startJob, finishJob, recoverRunningJobs, recoverStaleJobs, hasRunningJob, listJobs, listAllJobs, pageAllJobs,
     countAddresses, createCampaign, findOpenCampaign, getCampaignInternal, listCampaigns, listDueCampaigns,
     stopCampaign, resumeCampaign, updateCampaignLabelPrefix, deleteCampaign, completeCampaign, recordCampaignRun,
     upsertAddresses, listAddresses, pageAddresses, updateAddressState, updateAddressStates,

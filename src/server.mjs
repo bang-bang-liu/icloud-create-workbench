@@ -10,6 +10,8 @@ import { createInboxSyncWorker } from "./services/inbox-sync-worker.mjs";
 import { createApp } from "./app.mjs";
 import { createMailApiRepository } from "./repositories/mail-api-repository.mjs";
 import { createMailApiService } from "./services/mail-api-service.mjs";
+import { createReloginMailRepository } from "./repositories/relogin-mail-repository.mjs";
+import { createReloginMailService } from "./services/relogin-mail-service.mjs";
 
 /** 启动数据库、服务依赖和 HTTP 监听。 */
 function main() {
@@ -21,18 +23,21 @@ function main() {
   const icloudService = createIcloudService({ config, repositories, callBridge: callPythonBridge });
   const inboxService = createInboxService({ config, repositories });
   const mailApiService = createMailApiService({ config, repository: createMailApiRepository(db), inboxService });
+  const reloginMailService = createReloginMailService({ config,
+    repository: createReloginMailRepository(db), inboxService });
   const campaignService = createCampaignService({ config, repositories, icloudService });
   const publicMailService = createPublicMailService({ config, repositories });
   const inboxSyncWorker = createInboxSyncWorker({ config, repositories, inboxService });
   campaignService.start();
   inboxSyncWorker.start();
-  const app = createApp({ config, repositories, icloudService, inboxService, campaignService, publicMailService, mailApiService });
+  const app = createApp({ config, repositories, icloudService, inboxService, campaignService, publicMailService, mailApiService, reloginMailService });
   const server = app.listen(config.port, config.host, error => {
     if (error) {
       console.error(`HTTP 监听失败：${error.message}`);
       campaignService.close();
       inboxSyncWorker.close();
       void mailApiService.close();
+      void reloginMailService.close();
       db.close();
       process.exitCode = 1;
       return;
@@ -43,7 +48,10 @@ function main() {
     console.log(`收到 ${signal}，正在关闭服务`);
     campaignService.close();
     inboxSyncWorker.close();
-    server.close(async () => { await mailApiService.close(); db.close(); process.exit(0); });
+    server.close(async () => {
+      await Promise.all([mailApiService.close(), reloginMailService.close()]);
+      db.close(); process.exit(0);
+    });
   };
   process.on("SIGTERM", () => shutdown("SIGTERM"));
   process.on("SIGINT", () => shutdown("SIGINT"));

@@ -112,6 +112,7 @@ export function createIcloudService({ config, repositories, callBridge }) {
     if (!Number.isInteger(count) || count < 1 || count > config.batchLimit) {
       throw Object.assign(new Error(`每批只能生成 1-${config.batchLimit} 个`), { status: 400 });
     }
+    repositories.recoverStaleJobs(accountId);
     if (repositories.hasRunningJob(accountId)) {
       throw Object.assign(new Error("该账号已有生成任务运行中"), { status: 409 });
     }

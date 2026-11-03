@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { resolve } from "node:path";
 import { readMailApiConfig } from "./mail-api-config.mjs";
+import { readReloginMailConfig } from "./relogin-mail-config.mjs";
 
 /** 将环境变量转换为限定范围内的整数。 */
 function readInteger(name, fallback, minimum, maximum) {
@@ -55,5 +56,6 @@ export function loadConfig(overrides = {}) {
     logLevel: process.env.LOG_LEVEL || "info"
   };
   config.mailApi = readMailApiConfig(process.env, config.appOrigin);
+  config.reloginMail = readReloginMailConfig(process.env, config.mailApi);
   return { ...config, ...overrides };
 }
