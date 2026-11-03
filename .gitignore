@@ -1,5 +1,9 @@
 .env
+.env.*
+!.env.example
 node_modules/
+.cache/
+runtime/
 .venv/
 __pycache__/
 *.pyc
@@ -12,3 +16,14 @@ exports/
 *.db-wal
 vendor/hidemyemail-generator/.git/
 mcds/
+
+# 私有数据库、运行日志和源码打包文件
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3-shm
+*.sqlite3-wal
+*.log
+*.tgz
+*.tar.gz

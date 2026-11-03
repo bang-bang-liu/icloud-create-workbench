@@ -12,21 +12,24 @@ import { createCampaignRouter } from "./routes/campaign-routes.mjs";
 import { createMessageRouter } from "./routes/message-routes.mjs";
 import { createPublicMailRouter } from "./routes/public-mail-routes.mjs";
 import { createMailApiRouter } from "./routes/mail-api-routes.mjs";
+import { createReloginMailRouter } from "./routes/relogin-mail-routes.mjs";
 import { requireAdmin, requireTrustedOrigin } from "./middleware.mjs";
 import { verifyAdminToken } from "./security.mjs";
 
 /** 创建配置完整的 Express 应用。 */
-export function createApp({ config, repositories, icloudService, inboxService, campaignService, publicMailService, mailApiService }) {
+export function createApp({ config, repositories, icloudService, inboxService, campaignService, publicMailService, mailApiService, reloginMailService }) {
   const app = express();
   const skyrocDir = join(process.cwd(), "frontend", "apps", "admin", "dist");
   const legacyDir = join(process.cwd(), "public");
-  const frontendDir = existsSync(join(skyrocDir, "index.html")) ? skyrocDir : legacyDir;
+  const useSkyrocFrontend = existsSync(join(skyrocDir, "index.html"));
+  const frontendDir = useSkyrocFrontend ? skyrocDir : legacyDir;
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
   app.use(helmet({ contentSecurityPolicy: { directives: {
     "connect-src": ["'self'", "https://api.iconify.design", "https://api.unisvg.com", "https://api.simplesvg.com"],
     "upgrade-insecure-requests": null
   } } }));
+  app.use("/api/v1/relogin", createReloginMailRouter(reloginMailService));
   app.use("/api/v1", createMailApiRouter(mailApiService));
   app.use(express.json({ limit: "256kb" }));
   app.use(cookieParser());
@@ -58,7 +61,14 @@ export function createApp({ config, repositories, icloudService, inboxService, c
     res.setHeader("Pragma", "no-cache");
     res.sendFile(join(frontendDir, "index.html"));
   };
-  app.get(["/login", "/login/", "/login.html", "/login-out"], sendFrontend);
+  /** 在旧版静态界面回退模式下返回独立登录页，避免控制台入口在未登录时循环跳转。 */
+  const sendLoginPage = (req, res) => {
+    if (useSkyrocFrontend) return sendFrontend(req, res);
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0, no-transform");
+    res.setHeader("Pragma", "no-cache");
+    res.sendFile(join(frontendDir, "login.html"));
+  };
+  app.get(["/login", "/login/", "/login.html", "/login-out"], sendLoginPage);
   app.get("/mail/:email/:token", (req, res) => {
     res.setHeader("Cache-Control", "no-store, max-age=0");
     res.setHeader("Referrer-Policy", "no-referrer");

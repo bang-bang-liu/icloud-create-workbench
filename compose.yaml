@@ -10,7 +10,7 @@ services:
     ports:
       - "4173:4173"
     volumes:
-      - workbench-data:/app/data
+      - ./data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4173/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
@@ -23,6 +23,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-volumes:
-  workbench-data:

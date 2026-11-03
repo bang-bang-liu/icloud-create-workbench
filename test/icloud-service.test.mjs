@@ -168,6 +168,20 @@ test("同一 CK 只能占用一个活动批次任务名额", async () => {
   }
 });
 
+test("生成前自动回收超时的遗留任务", async () => {
+  const context = createContext();
+  try {
+    const account = await context.service.importAccount("X-APPLE-SECRET=value", "auto");
+    const staleJob = context.repositories.createJob(account.id, 5);
+    context.repositories.startJob(staleJob.id);
+    assert.equal(context.repositories.recoverStaleJobs(account.id, 0), 1);
+    const result = await context.service.generate(account.id, 1, "recovered");
+    assert.equal(result.generated.length, 1);
+  } finally {
+    context.cleanup();
+  }
+});
+
 test("同步成功后持久化桥接层探测到的有效分片", async () => {
   const context = createContext();
   try {

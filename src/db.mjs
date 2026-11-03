@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { dirname } from "node:path";
 import { mkdirSync } from "node:fs";
 import { ensureMailApiSchema } from "./mail-api-schema.mjs";
+import { ensureReloginMailSchema } from "./relogin-mail-schema.mjs";
 
 /** 创建数据库并执行启动迁移。 */
 export function createDatabase(databasePath) {
@@ -188,5 +189,6 @@ export function createDatabase(databasePath) {
   db.exec("CREATE INDEX IF NOT EXISTS idx_messages_account ON inbox_messages(account_id, received_at DESC)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_inbox_configs_due ON account_inbox_configs(next_sync_at)");
   ensureMailApiSchema(db);
+  ensureReloginMailSchema(db);
   return db;
 }

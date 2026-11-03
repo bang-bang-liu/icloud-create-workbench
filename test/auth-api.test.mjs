@@ -50,6 +50,7 @@ test("管理页面要求登录但登录页和公开邮件页可匿名访问", as
   const loginPage = await request(app).get("/login").expect(200).expect("Content-Type", /html/);
   assert.match(loginPage.headers["cache-control"], /no-store/);
   assert.match(loginPage.headers["cache-control"], /no-transform/);
+  assert.match(loginPage.text, /id="loginForm"/);
   await request(app).get("/mail/example%40icloud.com/public-token").expect(200).expect("Content-Type", /html/);
 });
 
